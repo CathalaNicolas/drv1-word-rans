@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.dll
+*.dll.a
+*.so
+*.dylib
+*.o
+*.obj
+.DS_Store
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
