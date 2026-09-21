@@ -61,7 +61,7 @@ def _row(
     drop_ok = decode_thin(thin) == data and out_p == data and decode(blob) == data
     tot_h0 = br["tot"] / h0 if h0 else float("nan")
     thin_h0 = len(thin) / h0 if h0 else float("nan")
-    # K1/K2 from PROBLEM.md are defined on source text; skew uses K3 notes.
+    # K1/K2 (see PAPER.md) are defined on source text; skew is reported separately.
     k1 = (corpus != "source-200k") or (thin_h0 <= K1_THIN_H0_MAX)
     k2 = (
         (corpus != "source-200k")
@@ -159,8 +159,9 @@ def timing_block(data: bytes) -> str:
         "",
         "Baseline: `ran0_decode`. Native parallel path = fused OpenMP over "
         f"**n_keys** (compact={COMPACT_KEYS}); not over requested N.",
+        "Speedup = ran0_ms / path_ms (larger is better).",
         "",
-        "| path | OMP_NUM_THREADS | ms | vs ran0 C |",
+        "| path | OMP_NUM_THREADS | ms | speedup vs ran0 |",
         "|---|---:|---:|---:|",
     ]
 
@@ -174,7 +175,7 @@ def timing_block(data: bytes) -> str:
 
         t_seq = _best_s(lambda: decode(compact, engine="native"))
         lines.append(
-            f"| m2_decode seq compact64 | 1 | {t_seq * 1e3:.2f} | {t_seq / t0:.2f}x |"
+            f"| m2_decode seq compact64 | 1 | {t_seq * 1e3:.2f} | {t0 / t_seq:.2f}x |"
         )
 
         for thr in thread_sets:
@@ -184,14 +185,14 @@ def timing_block(data: bytes) -> str:
             )
             lines.append(
                 f"| m2 parallel compact64 (ways={COMPACT_KEYS}) | {thr} | "
-                f"{t_p * 1e3:.2f} | {t_p / t0:.2f}x |"
+                f"{t_p * 1e3:.2f} | {t0 / t_p:.2f}x |"
             )
         for thr in thread_sets:
             _set_threads(thr)
             t_d = _best_s(lambda: decode_parallel(dense, 3125, engine="native"))
             lines.append(
                 f"| m2 parallel keys=N (ways=3125) | {thr} | "
-                f"{t_d * 1e3:.2f} | {t_d / t0:.2f}x |"
+                f"{t_d * 1e3:.2f} | {t0 / t_d:.2f}x |"
             )
     finally:
         if prev is None:
@@ -221,7 +222,7 @@ def timing_block(data: bytes) -> str:
             s_ms = min(p[1] for p in phases) * 1e3
             lines.append(
                 f"- OMP={thr}: fused={d_ms:.2f} ms, second_pass={s_ms:.2f} ms "
-                f"(vs ran0={d_ms / (t0 * 1e3):.2f}x fused)."
+                f"(speedup vs ran0={ (t0 * 1e3) / d_ms:.2f}x fused)."
             )
     if prev is None:
         os.environ.pop("OMP_NUM_THREADS", None)

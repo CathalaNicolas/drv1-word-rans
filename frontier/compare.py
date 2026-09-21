@@ -1,4 +1,4 @@
-"""Shared gates for M2 scorecard."""
+"""Shared gates for M2 scorecard (thresholds documented in PAPER.md)."""
 from __future__ import annotations
 
 WAYS = (1, 256, 1024, 3125)
